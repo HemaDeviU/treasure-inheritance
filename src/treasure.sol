@@ -16,8 +16,9 @@ contract Treasure is ReentrancyGuard {
     error treasure__Insufficientbalance();
     error treasure__YouCantBeYourHeir();
 
-    event Withdrew(uint256 indexed amt, address indexed owner);
+    event WithdrawalComplete(uint256 indexed amt, address indexed owner);
     event OwnershipUpdated(address indexed owner, address indexed heir);
+    event DepositReceived(address indexed sender, uint256 indexed despositAmount);
 
     constructor(address _owner, address _heir){
         if(_owner == address(0) || _heir == address(0)){
@@ -27,7 +28,9 @@ contract Treasure is ReentrancyGuard {
     heir = payable(_heir);
     lastWithdrawalTime = block.timestamp;
     }
-    receive() external payable {}
+    receive() external payable {
+        emit DepositReceived(msg.sender, msg.value);
+    }
     fallback() external payable {}
 
     modifier onlyOwner() {
@@ -44,18 +47,18 @@ contract Treasure is ReentrancyGuard {
         _;
     }
 
-    function withdraw(uint256 amount) external payable onlyOwner nonReentrant {
+    function withdraw(uint256 amount) external onlyOwner nonReentrant {
+        if(amount > address(this).balance)
+        {
+            revert treasure__Insufficientbalance();
+        }
         if(block.timestamp < lastWithdrawalTime + interval)
         {
             revert treasure__Intervaltimeexceded();
         }
         
         
-        if(amount > address(this).balance)
-        {
-            revert treasure__Insufficientbalance();
-        }
-        emit Withdrew(amount, msg.sender);
+        emit WithdrawalComplete(amount, msg.sender);
         lastWithdrawalTime = block.timestamp;
         if(amount > 0)
         {
@@ -73,12 +76,22 @@ contract Treasure is ReentrancyGuard {
         {
             revert treasure__YouCantBeYourHeir();
         }
+        emit OwnershipUpdated(msg.sender, _newHeir);
          owner = heir;
          heir = payable(_newHeir);
-         emit OwnershipUpdated(owner, heir);
+         
     }
     function getBalance() public view returns (uint256 bal)
     {
         return address(this).balance;
+    }
+    function getOwner() public view returns (address){
+        return owner;
+    }
+    function getHeir() public view returns(address){
+        return heir;
+    }
+    function getInterval() public pure returns(uint256){
+        return interval;
     }
 }
