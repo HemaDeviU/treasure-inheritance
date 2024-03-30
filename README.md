@@ -4,7 +4,7 @@ This project creates an inheritance contract in solidity.The contract allows the
 
 ## Requirements
 
-# Foundry
+### Foundry
 
 To get started with Foundry, run the following commands:
 
